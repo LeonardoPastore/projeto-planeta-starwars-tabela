@@ -1,33 +1,49 @@
-import React, { useContext } from 'react';
-import PlanetsContext from '../context/planetsContext';
+import { useContext } from 'react';
+import contextPlanet from '../context/planetsContext';
+import FilterContext from '../context/filterContext';
 
-function Tabela() {
-  const { planets, headers } = useContext(PlanetsContext);
+function Table() {
+  const { planets, keys } = useContext(contextPlanet);
+  const { filterName, click: clickButton } = useContext(FilterContext);
 
-  const renderHeaders = () => (
-    headers.map((header) => (
-      <th key={ header }>{header}</th>
-    ))
-  );
+  const filtered = planets.filter((element) => {
+    const nameFilter = filterName.value.toLowerCase();
+    const nameIncludesFilter = element.name.toLowerCase().includes(nameFilter);
 
-  const renderRows = () => (
-    planets.map((planet) => (
-      <tr key={ planet.name }>
-        {Object.values(planet).map((item, index) => (
-          <td key={ index }>{item}</td>
-        ))}
-      </tr>
-    ))
-  );
+    if (clickButton.value.length === 0) {
+      return nameIncludesFilter;
+    }
+
+    return clickButton.value.every(([key, operator, comparison]) => {
+      if (operator === 'maior que') {
+        return element[key] > +comparison;
+      } if (operator === 'menor que') {
+        return element[key] < +comparison;
+      } if (operator === 'igual a') {
+        return element[key] === comparison;
+      }
+      return false;
+    }) && nameIncludesFilter;
+  }).map((planet) => (
+    <tr key={ planet.name }>
+      {Object.values(planet).map((element, index) => (
+        <td key={ `${element}${index}` }>{element}</td>
+      ))}
+    </tr>
+  ));
 
   return (
     <table>
       <thead>
-        <tr>{renderHeaders()}</tr>
+        <tr>
+          {keys.map((element) => (
+            <th key={ element }>{element}</th>
+          ))}
+        </tr>
       </thead>
-      <tbody>{renderRows()}</tbody>
+      <tbody>{filtered}</tbody>
     </table>
   );
 }
 
-export default Tabela;
+export default Table;

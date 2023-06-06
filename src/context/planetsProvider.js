@@ -1,35 +1,34 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
-import PlanetsContext from './planetsContext';
-import fetchApi from '../services/fetchAPI';
+import { useEffect } from 'react';
+import contextPlanet from './planetsContext';
+import useFetch from '../services/fetchAPI';
 
 function PlanetsProvider({ children }) {
-  const [planets, setPlanets] = useState([]);
-  const [headers, setHeaders] = useState([]);
+  const api = 'https://swapi.dev/api/planets';
+  const { planets, fetchApi } = useFetch(api);
+
+  let initialKeys = [];
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const dataApi = await fetchApi('https://swapi.dev/api/planets');
-        const [firstPlanet] = dataApi;
-        setPlanets(dataApi);
-        setHeaders(Object.keys(firstPlanet));
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
+    const apiUpdate = () => {
+      fetchApi(api);
     };
-    fetchData();
-  }, []);
+    apiUpdate();
+  }, [fetchApi]);
+
+  if (planets.length) {
+    initialKeys = Object.keys(planets[0]);
+  }
 
   return (
-    <PlanetsContext.Provider value={ { planets, headers } }>
-      { children }
-    </PlanetsContext.Provider>
+    <contextPlanet.Provider value={ { planets, keys: initialKeys } }>
+      {children}
+    </contextPlanet.Provider>
   );
 }
 
-PlanetsProvider.propTypes = {
-  children: PropTypes.node.isRequired,
-};
-
 export default PlanetsProvider;
+
+PlanetsProvider.propTypes = {
+  children: PropTypes.elementType.isRequired,
+};
