@@ -1,34 +1,84 @@
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useEffect } from 'react';
-import contextPlanet from './planetsContext';
-import useFetch from '../services/fetchAPI';
+import fetchApi from '../services/fetchAPI';
+import planetsContext from './planetsContext';
 
 function PlanetsProvider({ children }) {
-  const api = 'https://swapi.dev/api/planets';
-  const { planets, fetchApi } = useFetch(api);
+  const [planetData, setPlanetData] = useState([]);
+  const [textFilter, setTextFilter] = useState('');
+  const [activeFilters, setActiveFilters] = useState([]);
+  const [selectedFilter, setSelectedFilter] = useState({
+    column: 'population',
+    condition: 'maior que',
+    value: 0,
+  });
+  const initialColumns = [
+    'population',
+    'orbital_period',
+    'diameter',
+    'rotation_period',
+    'surface_water',
+  ];
 
-  let initialKeys = [];
+  const [columns, setColumns] = useState(initialColumns);
 
   useEffect(() => {
-    const apiUpdate = () => {
-      fetchApi(api);
+    const fetchData = async () => {
+      const planetsArray = await fetchApi();
+      setPlanetData(planetsArray);
     };
-    apiUpdate();
-  }, [fetchApi]);
 
-  if (planets.length) {
-    initialKeys = Object.keys(planets[0]);
-  }
+    fetchData();
+  }, []);
+  const handleOrder = (order) => {
+    const { column, sort } = order;
+    const sortedData = [...planetData];
+    const one = 1;
+    const minusOne = -1;
+
+    sortedData.sort((a, b) => {
+      if (a[column] === 'unknown' && b[column] === 'unknown') {
+        return 0;
+      } if (a[column] === 'unknown') {
+        return one;
+      } if (b[column] === 'unknown') {
+        return minusOne;
+      } if (sort === 'ASC') {
+        return a[column] - b[column];
+      }
+      return b[column] - a[column];
+    });
+
+    setPlanetData(sortedData);
+  };
+
+  const value = {
+    planetData,
+    textFilter,
+    setTextFilter,
+    selectedFilter,
+    setSelectedFilter,
+    activeFilters,
+    setActiveFilters,
+    columns,
+    setColumns,
+    handleOrder,
+    initialColumns,
+  };
 
   return (
-    <contextPlanet.Provider value={ { planets, keys: initialKeys } }>
+    <planetsContext.Provider value={ value }>
+      {' '}
+
       {children}
-    </contextPlanet.Provider>
+      {' '}
+
+    </planetsContext.Provider>
   );
 }
 
-export default PlanetsProvider;
-
 PlanetsProvider.propTypes = {
-  children: PropTypes.elementType.isRequired,
+  children: PropTypes.element.isRequired,
 };
+
+export default PlanetsProvider;

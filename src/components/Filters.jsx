@@ -1,83 +1,113 @@
-import React, { useContext } from 'react';
-import FilterContext from '../context/filterContext';
+import React, { useContext, useEffect } from 'react';
+import planetsContext from '../context/planetsContext';
 
-function Filter() {
+function Filters() {
   const {
-    filterName, columnFilter: columnFilterAll, comparisonFilter:
-    comparison, valueFilter, click,
-  } = useContext(FilterContext);
+    setTextFilter,
+    textFilter,
+    selectedFilter,
+    setSelectedFilter,
+    activeFilters,
+    setActiveFilters,
+    columns,
+    setColumns,
+    initialColumns,
+  } = useContext(planetsContext);
 
-  const handleAddFilter = () => {
-    click.handleClickAdd([columnFilterAll.value,
-      comparison.value, valueFilter.value]);
-    columnFilterAll.selectOptions(columnFilterAll.value);
+  const handleChange = (e) => {
+    setTextFilter(e.target.value);
   };
 
-  const handleDeleteFilter = (element) => {
-    click.handleClickRemove(click.value[element]);
+  const handleClickFilterBtn = () => {
+    setActiveFilters([...activeFilters, selectedFilter]);
+    const newColumns = columns.filter((col) => col !== selectedFilter.column);
+    setColumns(newColumns);
+    setSelectedFilter({
+      column: '',
+      condition: '',
+      value: '',
+    });
+  };
+
+  const handleDeleteFilter = (column) => {
+    const updatedFilters = activeFilters.filter((filter) => filter.column !== column);
+    const updatedColumns = [...columns, column];
+    setActiveFilters(updatedFilters);
+    setColumns(updatedColumns);
   };
 
   const handleRemoveAllFilters = () => {
-    click.handleClickRemoveAll();
+    setActiveFilters([]);
+    setColumns(initialColumns);
   };
+
+  useEffect(() => {
+    setSelectedFilter({ column: columns[0] || '', condition: 'maior que', value: 0 });
+  }, [columns, setSelectedFilter]);
 
   return (
     <div>
-      <div>
-        <input
-          type="text"
-          data-testid="name-filter"
-          placeholder="Name"
-          id="name-filter"
-          value={ filterName.value }
-          onChange={ filterName.handleChange }
-        />
-      </div>
+      <input
+        type="text"
+        data-testid="name-filter"
+        name="textInput"
+        value={ textFilter }
+        onChange={ handleChange }
+        placeholder="Pesquisa por nome"
+      />
+
       <div>
         <select
           data-testid="column-filter"
-          onChange={ columnFilterAll.handleChange }
-          disabled={ !columnFilterAll.value }
+          name="column"
+          onChange={ (e) => {
+            setSelectedFilter({ ...selectedFilter, column: e.target.value });
+          } }
         >
-          {columnFilterAll.options.map((element) => (
-            <option key={ element } value={ element }>
-              {element}
+          {columns.map((column) => (
+            <option value={ column } key={ column }>
+              {column}
             </option>
           ))}
         </select>
-
         <select
           data-testid="comparison-filter"
-          onChange={ comparison.handleChange }
+          onChange={ (e) => {
+            setSelectedFilter({ ...selectedFilter, condition: e.target.value });
+          } }
         >
           <option value="maior que">maior que</option>
           <option value="menor que">menor que</option>
           <option value="igual a">igual a</option>
         </select>
-
         <input
-          data-testid="value-filter"
-          placeholder="Número"
           type="number"
-          value={ valueFilter.value }
-          onChange={ valueFilter.handleChange }
+          data-testid="value-filter"
+          onChange={ (e) => {
+            setSelectedFilter({ ...selectedFilter, value: e.target.value });
+          } }
+          value={ selectedFilter.value }
         />
 
-        <button data-testid="button-filter" type="button" onClick={ handleAddFilter }>
-          Adicionar
+        {activeFilters.map((filter) => (
+          <div key={ filter.column } data-testid="filter">
+            {`${filter.column} ${filter.condition} ${filter.value}`}
+            {' '}
+
+            {' '}
+            <button onClick={ () => handleDeleteFilter(filter.column) }>Delete</button>
+            {' '}
+
+          </div>
+        ))}
+
+        <button
+          data-testid="button-filter"
+          type="button"
+          onClick={ handleClickFilterBtn }
+        >
+          Adicionar Filtro
         </button>
-
-        <div>
-          {click.value.map((filter, index) => (
-            <div key={ index } data-testid="filter">
-              <p>{`${filter[0]} ${filter[1]} ${filter[2]}`}</p>
-              <button type="button" onClick={ () => handleDeleteFilter(index) }>
-                Excluir Filtro
-              </button>
-            </div>
-          ))}
-        </div>
-
         <button
           data-testid="button-remove-filters"
           type="button"
@@ -85,9 +115,10 @@ function Filter() {
         >
           Remover todas filtragens
         </button>
+
       </div>
     </div>
   );
 }
 
-export default Filter;
+export default Filters;
